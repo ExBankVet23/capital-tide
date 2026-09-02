@@ -1,1 +1,54 @@
+name: Update Capital Tide data
 
+# Runs for free on GitHub Actions' free tier for public repos.
+# Schedule: once a day, aimed at UK mornings.
+#
+# IMPORTANT: GitHub Actions cron always runs in UTC and does NOT
+# automatically adjust for UK clock changes. 06:00 UTC lands at:
+#   - 06:00 UK time during GMT (late Oct - late Mar)
+#   - 07:00 UK time during BST (late Mar - late Oct)
+# So it'll drift by an hour twice a year around the clock-change weekends —
+# fine for "fresh data before I check it in the morning" use, but if you
+# want it locked to an exact UK clock time year-round, that needs two cron
+# lines with date-range conditions, which is more complexity than this
+# needs. Adjust the hour below if 6-7am isn't when you want it.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run data fetch pipeline
+        env:
+          # Add both as repo secrets: Settings -> Secrets and variables ->
+          # Actions -> New repository secret. FRED_API_KEY is required;
+          # COINGECKO_API_KEY is optional but strongly recommended (keyless
+          # CoinGecko calls are rate-limited hard).
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+        run: python fetch_data.py
+
+      - name: Commit updated data.json
+        run: |
+          git config user.name "capital-tide-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data.json
+          git diff --quiet --cached || git commit -m "Auto-update data.json ($(date -u +%Y-%m-%d))"
+          git push

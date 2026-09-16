@@ -395,7 +395,7 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
         </div>
         <div class="first-load-callout" id="firstLoadCallout">
           <button class="callout-close" onclick="document.getElementById('firstLoadCallout').style.display='none'">✕</button>
-          👋 New here? This is already on — hover anything with a dotted underline for a plain-English explanation.
+          👋 New here? Flip this on to get plain-English explanations when you hover over anything on the page.
           <div class="callout-arrow"></div>
         </div>
       </div>
@@ -543,14 +543,14 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
       <h5>Regimes, cycles &amp; backtesting</h5>
       <p>Historical patterns, regime labels, and threshold levels referenced on this site are illustrative of general market tendencies and do not guarantee future results. Past performance and past correlations are not indicative of future performance.</p>
       <h5>Donations</h5>
-      <p>Anything sent via the addresses on this site is a voluntary, non-refundable gift to support the operator's work. It does not purchase any product, service, security, or ownership interest, and creates no obligation on the operator's part beyond a thank-you. Digital asset transactions are irreversible — double-check the address before sending, as the operator cannot recover misdirected funds.</p>
+      <p>Any cryptocurrency sent via the addresses on this site is a voluntary, non-refundable gift to support the operator's work. It does not purchase any product, service, security, or ownership interest, and creates no obligation on the operator's part beyond a thank-you. Digital asset transactions are irreversible — double-check the address before sending, as the operator cannot recover misdirected funds.</p>
       <h5>Contact &amp; email use</h5>
       <p>Email addresses submitted via the unlock form are used only to grant access and to send occasional updates about this tool; they are not sold or shared with third parties. You can ask to be removed at any time by emailing the contact address on this site. Feedback and suggestions are welcome at the contact address listed in the Support section above.</p>
       <h5>Intellectual property</h5>
       <p>The design, code, framework, and written content of Capital Tide are the property of its operator unless otherwise stated. The underlying data-provider trademarks (FRED, BIS, CFTC, exchange names, etc.) referenced for methodology purposes belong to their respective owners and no affiliation or endorsement is implied.</p>
       <h5>Governing law</h5>
       <p>These terms are governed by the laws of England and Wales. <i>[Site owner: this is a sensible default given the project's context, not a confirmed legal opinion — worth a quick solicitor check before wide publication, particularly given the "financial promotions" angle: the FCA regulates content that could be read as encouraging investment decisions, even when framed as educational. The instinct to frame this consistently as a research/analytics tool rather than advice is the right one — a solicitor's job here is mainly to confirm that framing holds up, not to overhaul it.]</i></p>
-      <p style="margin-top:10px;color:var(--text-faint);font-size:10px;">This section is a starting-point draft, not legal advice. Have a qualified solicitor review it before relying on it, especially if real users or payments are involved.</p>
+      <p style="margin-top:10px;color:var(--text-faint);font-size:10px;">This section is a starting-point draft, not legal advice. Have a qualified solicitor review it before relying on it, especially once real users or payments are involved.</p>
     </div>
   </details>
 
@@ -862,11 +862,32 @@ if(new URLSearchParams(window.location.search).get('unlock') === '1'){
 
 <script>
 /* ============================= TRAINING MODE / TOOLTIP ENGINE ============================= */
-let trainingMode = true;
+// Flow Guide now defaults to OFF, and remembers whatever the user last chose.
+// Preference is stored per-browser in localStorage, wrapped in try/catch
+// since it can throw in private-browsing modes or with cookies blocked —
+// in that case it just falls back to the default (off) each session rather
+// than breaking anything.
+const FLOW_GUIDE_KEY = 'capitalTide.flowGuide';
+function loadFlowGuidePref(){
+  try {
+    return localStorage.getItem(FLOW_GUIDE_KEY) === 'on';
+  } catch(e){
+    return false; // storage unavailable — default to off
+  }
+}
+function saveFlowGuidePref(on){
+  try {
+    localStorage.setItem(FLOW_GUIDE_KEY, on ? 'on' : 'off');
+  } catch(e){
+    // storage unavailable — preference just won't persist this session
+  }
+}
+let trainingMode = loadFlowGuidePref();
 function toggleTraining(){
   trainingMode = !trainingMode;
   document.getElementById('trainToggle').classList.toggle('on', trainingMode);
   document.body.classList.toggle('training-on', trainingMode);
+  saveFlowGuidePref(trainingMode);
   if(!trainingMode) hideTip();
 }
 // helper to build data-attributes for any element: tt(headline, plain-english meaning, dynamic advisory)
@@ -909,8 +930,9 @@ document.addEventListener('mouseout', function(e){
   const el = e.target.closest('[data-tt-head]');
   if(el) hideTip();
 });
-document.getElementById('trainToggle').classList.add('on');
-document.body.classList.add('training-on');
+// Apply whatever the user last chose (defaults to off for first-time visitors)
+document.getElementById('trainToggle').classList.toggle('on', trainingMode);
+document.body.classList.toggle('training-on', trainingMode);
 
 (async function(){
 /* ============================= DATA MODEL ============================= */

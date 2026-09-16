@@ -684,12 +684,42 @@ def vol_term_structure_proxy():
     calm) vs backwardation (ratio > 1, stress) — without needing to track
     individual futures contract expirations.
     """
-    vix = yahoo_chart_series("^VIX", keep_last=500)
-    vix3m = yahoo_chart_series("^VIX3M", keep_last=500)
+    vix, vix3m = None, None
+    # Per-leg error reporting: the old code raised a bare "insufficient data
+    # returned" that didn't say WHICH of the two legs failed, or why — the
+    # same diagnostics gap we hit with FRED earlier. A real run failed here
+    # with exactly that unhelpful message, so each leg is now reported
+    # separately, with a retry (Yahoo intermittently rate-limits or
+    # soft-blocks cloud IPs like GitHub Actions runners) and a Stooq
+    # fallback before giving up.
+    def fetch_leg(symbol, stooq_symbol):
+        last_err = None
+        for attempt in range(3):
+            try:
+                return yahoo_chart_series(symbol, keep_last=500)
+            except Exception as e:
+                last_err = e
+                if attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+        try:
+            return stooq_series(stooq_symbol, keep_last=500)
+        except Exception as e_stooq:
+            raise RuntimeError(f"{symbol}: Yahoo failed after 3 attempts ({last_err}); Stooq fallback also failed ({e_stooq})")
+
+    try:
+        vix = fetch_leg("^VIX", "^vix")
+    except Exception as e:
+        raise RuntimeError(f"VIX leg failed — {e}")
+    try:
+        vix3m = fetch_leg("^VIX3M", "^vix3m")
+    except Exception as e:
+        raise RuntimeError(f"VIX3M leg failed — {e}")
+
     n = min(len(vix), len(vix3m))
     ratio = [vix[-n + i] / vix3m[-n + i] for i in range(n) if vix3m[-n + i] != 0]
     if len(ratio) < 10:
-        raise RuntimeError("insufficient data returned")
+        raise RuntimeError(f"only {len(ratio)} usable ratio points "
+                            f"(VIX returned {len(vix)}, VIX3M returned {len(vix3m)})")
     return ratio
 
 

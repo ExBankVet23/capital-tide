@@ -394,7 +394,7 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
           <span class="tt-label">🧭 Flow Guide</span>
         </div>
         <div class="first-load-callout" id="firstLoadCallout">
-          <button class="callout-close" onclick="document.getElementById('firstLoadCallout').style.display='none'">✕</button>
+          <button class="callout-close" onclick="dismissCallout()">✕</button>
           👋 New here? Flip this on to get plain-English explanations when you hover over anything on the page.
           <div class="callout-arrow"></div>
         </div>
@@ -883,6 +883,26 @@ function saveFlowGuidePref(on){
   }
 }
 let trainingMode = loadFlowGuidePref();
+
+// Same persistence trick for the first-load welcome bubble: once dismissed,
+// it stays dismissed on future visits. Same try/catch guarding — if storage
+// is unavailable it simply shows again each session rather than breaking.
+const CALLOUT_KEY = 'capitalTide.calloutDismissed';
+function dismissCallout(){
+  const el = document.getElementById('firstLoadCallout');
+  if(el) el.style.display = 'none';
+  try { localStorage.setItem(CALLOUT_KEY, 'yes'); } catch(e){}
+}
+function applyCalloutPref(){
+  let dismissed = false;
+  try { dismissed = localStorage.getItem(CALLOUT_KEY) === 'yes'; } catch(e){}
+  // Also hide it for anyone who already has Flow Guide switched on — the
+  // bubble only exists to point at a feature they're clearly already using.
+  if(dismissed || trainingMode){
+    const el = document.getElementById('firstLoadCallout');
+    if(el) el.style.display = 'none';
+  }
+}
 function toggleTraining(){
   trainingMode = !trainingMode;
   document.getElementById('trainToggle').classList.toggle('on', trainingMode);
@@ -933,6 +953,7 @@ document.addEventListener('mouseout', function(e){
 // Apply whatever the user last chose (defaults to off for first-time visitors)
 document.getElementById('trainToggle').classList.toggle('on', trainingMode);
 document.body.classList.toggle('training-on', trainingMode);
+applyCalloutPref();
 
 (async function(){
 /* ============================= DATA MODEL ============================= */

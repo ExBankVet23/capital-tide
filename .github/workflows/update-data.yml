@@ -55,4 +55,15 @@ jobs:
           # empty every single run and never builds up.
           git add data.json derivatives_history.json
           git diff --quiet --cached || git commit -m "Auto-update data.json ($(date -u +%Y-%m-%d))"
-          git push
+          # A real run hit "! [rejected] main -> main (fetch first)" — the
+          # commit above succeeded, but by the time this step tried to push,
+          # the remote had a newer commit (most likely two runs overlapping,
+          # e.g. a manual re-trigger while the scheduled run was still
+          # going). Rebase onto whatever's now on the remote immediately
+          # before pushing, retrying a few times in case of a repeated race,
+          # instead of just failing outright.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $attempt failed (likely a race with another run) — retrying in 5s..."
+            sleep 5
+          done

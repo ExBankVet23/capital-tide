@@ -210,10 +210,10 @@ def yahoo_chart_series(symbol, keep_last=500):
     result = (data.get("chart") or {}).get("result")
     if not result:
         raise RuntimeError(f"unexpected Yahoo response shape for {symbol}")
-    closes = result[0]["indicators"]["quote"][0]["close"]
-    closes = [c for c in closes if c is not None]
+    raw_closes = result[0]["indicators"]["quote"][0]["close"]
+    closes = [c for c in raw_closes if c is not None]
     if len(closes) < 10:
-        raise RuntimeError("insufficient data returned")
+        raise RuntimeError(f"insufficient data returned for {symbol} ({len(closes)} usable closes out of {len(raw_closes)} returned)")
     return closes[-keep_last:]
 
 
@@ -678,13 +678,23 @@ def vol_term_structure_proxy():
     contract-roll logic against CFE futures settlement files with no clean,
     verifiable-from-here download URL, which is a much bigger and shakier
     undertaking than anything else in this pipeline. This is a cleaner,
-    equally valid proxy instead: CBOE's own VIX (30-day) vs VIX3M (93-day)
+    equally valid proxy instead: CBOE's own VIX (30-day) vs VIX9D (9-day)
     spot volatility indices, both freely available via Yahoo Finance. Same
     conceptual signal as futures term structure — contango (ratio < 1,
     calm) vs backwardation (ratio > 1, stress) — without needing to track
     individual futures contract expirations.
+
+    Originally used VIX3M (93-day) for the second leg, but two separate real
+    runs — one locally, one on GitHub Actions, different machines entirely —
+    both failed identically with "insufficient data returned" (not a block
+    or auth error; Yahoo responds, just without enough usable closes for
+    that specific ticker). Since the failure was identical across two
+    unrelated environments, this looks like a genuine Yahoo data-coverage
+    gap for ^VIX3M specifically, not an IP/network issue — so rather than
+    keep retrying the same broken endpoint, swapped to VIX9D, a genuinely
+    different CBOE index with the same term-structure logic.
     """
-    vix, vix3m = None, None
+    vix, vix_short = None, None
     # Per-leg error reporting: the old code raised a bare "insufficient data
     # returned" that didn't say WHICH of the two legs failed, or why — the
     # same diagnostics gap we hit with FRED earlier. A real run failed here
@@ -711,15 +721,15 @@ def vol_term_structure_proxy():
     except Exception as e:
         raise RuntimeError(f"VIX leg failed — {e}")
     try:
-        vix3m = fetch_leg("^VIX3M", "^vix3m")
+        vix_short = fetch_leg("^VIX9D", "^vix9d")
     except Exception as e:
-        raise RuntimeError(f"VIX3M leg failed — {e}")
+        raise RuntimeError(f"VIX9D leg failed — {e}")
 
-    n = min(len(vix), len(vix3m))
-    ratio = [vix[-n + i] / vix3m[-n + i] for i in range(n) if vix3m[-n + i] != 0]
+    n = min(len(vix), len(vix_short))
+    ratio = [vix[-n + i] / vix_short[-n + i] for i in range(n) if vix_short[-n + i] != 0]
     if len(ratio) < 10:
         raise RuntimeError(f"only {len(ratio)} usable ratio points "
-                            f"(VIX returned {len(vix)}, VIX3M returned {len(vix3m)})")
+                            f"(VIX returned {len(vix)}, VIX9D returned {len(vix_short)})")
     return ratio
 
 

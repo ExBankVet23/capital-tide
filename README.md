@@ -2,7 +2,7 @@
 
 **An open-source demonstration of how much macro liquidity data is genuinely reconstructable from free, public sources — a daily regime-scoring desk, built to showcase the data, not to advise on trades.**
 
-![status](https://img.shields.io/badge/data-55%2F58%20series%20live-2ECC71)
+![status](https://img.shields.io/badge/data-51%2F58%20series%20live-2ECC71)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![cost](https://img.shields.io/badge/data%20cost-%240%2Fmonth-brightgreen)
 ![build](https://img.shields.io/badge/build-open%20%26%20community--supported-9B8CFF)
@@ -15,7 +15,7 @@ Capital Tide is a demonstration of how much macro and market data is genuinely r
 
 ## Why this exists
 
-Most macro liquidity dashboards live behind institutional paywalls or cost hundreds a month in data fees. Capital Tide asks a simple question: **how much of that is actually reconstructable for free, if you're willing to be honest about the gaps?** The answer, it turns out, is most of it — currently **55 of 58 tracked series run on live data**, pulled from FRED, Yahoo Finance, CoinGecko, CFTC, Binance, DefiLlama, Alternative.me, AAII, and Cboe. The handful that don't have a free equivalent are labeled exactly as such, in plain sight, not hidden.
+Most macro liquidity dashboards live behind institutional paywalls or cost hundreds a month in data fees. Capital Tide asks a simple question: **how much of that is actually reconstructable for free, if you're willing to be honest about the gaps?** The answer, it turns out, is most of it — currently **51 of 58 tracked series run on live data**, pulled from FRED, Yahoo Finance, CoinGecko, CFTC, Binance, DefiLlama, Alternative.me, AAII, and Cboe. The handful that don't have a free equivalent are labeled exactly as such, in plain sight, not hidden.
 
 ## What it does
 
@@ -37,12 +37,13 @@ Most macro liquidity dashboards live behind institutional paywalls or cost hundr
 | Perp funding rate, open interest | Binance public API |
 | Crypto sentiment | [Alternative.me](https://alternative.me/crypto/fear-and-greed-index/) |
 | Retail sentiment | AAII weekly survey (free download) |
-| Options tail-risk, vol term structure proxy | Cboe SKEW Index, VIX/VIX3M (via Yahoo Finance) |
+| Options tail-risk | Cboe SKEW Index (via Yahoo Finance) |
 | Fund manager cash proxy | Money market fund assets (Fed H.6 / FRED) |
 
-Two series remain synthetic on principle, not laziness — the exact reason is shown live in the dashboard's Data Provenance panel:
-- **BIS Global Liquidity Indicators** — a free endpoint exists but needs its exact query key hand-verified
+Four series remain synthetic on principle, not laziness — the exact reason is shown live in the dashboard's Data Provenance panel:
+- **BIS Global Liquidity Indicators** (USD credit + EUR credit — two series) — a free endpoint exists but needs its exact query key hand-verified
 - **Exchange net-flow** — genuinely proprietary wallet-clustering data (Glassnode/CryptoQuant-style); no free equivalent exists
+- **Vol term structure (VX1-VX2)** — tried twice (against VIX3M, then VIX9D); both failed identically in two separate environments, pointing to a genuine data-coverage gap for CBOE's secondary vol indices on Yahoo Finance's end
 
 ## Quick start
 

@@ -42,6 +42,11 @@ HONEST GAPS (left synthetic on purpose — see README_DATA_SETUP.md):
     wired in reliably. Left as a clearly-flagged TODO.
   - True exchange net-flow (on-chain wallet clustering) — no free
     equivalent exists; this is proprietary Glassnode/CryptoQuant-style data.
+  - Vol Term Structure (VX1-VX2) — tried twice (VIX3M, then VIX9D via Yahoo
+    Finance), both failed identically across two separate environments
+    (local machine + GitHub Actions), pointing to a genuine data-coverage
+    gap on Yahoo's end for CBOE's secondary vol indices, not a network
+    issue. See vol_term_structure_proxy() for the full attempt and reasoning.
 
 NOTE on Fund Manager Cash Level: this is now a genuine free PROXY, not the
 BofA survey itself. It uses weekly Retail + Institutional Money Market Fund
@@ -906,7 +911,29 @@ safe("Fund Manager Cash Level", SERIES, mmf_cash_proxy)
 
 # ---- Derivatives bucket: SKEW proxy + VIX/VIX3M term structure proxy ----
 safe("Equity Put/Call Skew", SERIES, skew_index_series)
-safe("Vol Term Structure (VX1-VX2)", SERIES, vol_term_structure_proxy)
+
+# Vol Term Structure (VX1-VX2): stopped actively attempting this one.
+# Real evidence from two separate proxy attempts, run in two different
+# environments (local machine and GitHub Actions):
+#   - VIX3M leg: consistently "insufficient data returned", no count given
+#   - VIX9D leg: consistently returned exactly 1 usable close out of 1
+#     total, regardless of the 2-year range requested
+# Both are CBOE's secondary/companion volatility indices. The consistent,
+# environment-independent nature of both failures points to a genuine data
+# gap on Yahoo Finance's end for these specific tickers — likely only the
+# primary ^VIX index gets full historical depth via their free chart API,
+# not its companion indices. This isn't a network/IP-blocking issue like
+# the earlier Binance/Bybit gaps — retrying a third ticker variant would
+# very likely hit the same wall. vol_term_structure_proxy() is left in the
+# code below for reference / in case a future contributor finds a genuine
+# historical source for VIX3M, VIX9D, or actual VX1-VX2 futures data.
+ERRORS["Vol Term Structure (VX1-VX2)"] = (
+    "No reliable free historical source found after two separate attempts (VIX3M, then "
+    "VIX9D via Yahoo Finance) — both failed identically in two different environments, "
+    "pointing to a genuine data-coverage gap on Yahoo's end for CBOE's secondary vol "
+    "indices, not a network issue. Left synthetic. See vol_term_structure_proxy() for "
+    "the attempted implementation and full reasoning."
+)
 
 # ---- SECTORS (Stooq) ----
 SECTOR_TICKERS = {

@@ -8,8 +8,8 @@ have no free equivalent yet.
 
 | Status | Series |
 |---|---|
-| ✅ Real (free) | Fed Balance Sheet, TGA, RRP, DXY, 10Y Real Yield, 2s10s, 5s30s, HY OAS, IG Spread, VIX, Financial Conditions Index, 2Y/10Y Yields, SPY, QQQ, ACWI, Russell 2000, XLF, HYG, LQD, Gold, Oil, Copper, Broad Commodity Index, USDJPY, EM FX Basket (approx.), Bonds (TLT proxy), BTC, ETH, BTC Dominance (self-computed), Altseason Index (self-computed), Stablecoin Supply, Perp Funding Rate, Open Interest, Crypto Fear & Greed, all 10 sector ETFs, COT net positioning (DXY/Gold/WTI/S&P 500 futures), **AAII Bull-Bear Spread**, **Put/Call Ratio (Cboe)** |
-| 🟡 Left synthetic — genuine free-data gap | BIS Global Liquidity Indicators (USD/EUR credit), true exchange net-flow, Fund Manager Cash Level (BofA survey has no clean free API, only media commentary) |
+| ✅ Real (free) | Fed Balance Sheet, TGA, RRP, DXY, 10Y Real Yield, 2s10s, 5s30s, HY OAS, IG Spread, VIX, Financial Conditions Index, 2Y/10Y Yields, SPY, QQQ, ACWI, Russell 2000, XLF, HYG, LQD, Gold, Oil, Copper, Broad Commodity Index, USDJPY, EM FX Basket (approx.), Bonds (TLT proxy), BTC, ETH, BTC Dominance (self-computed), Altseason Index (self-computed), Stablecoin Supply, Perp Funding Rate, Open Interest, Crypto Fear & Greed, all 10 sector ETFs, COT net positioning (DXY/Gold/WTI/S&P 500 futures), AAII Bull-Bear Spread, Put/Call Ratio (Cboe), Equity Put/Call Skew (Cboe SKEW Index), Fund Manager Cash Level (Money Market Fund proxy) |
+| 🟡 Left synthetic — genuine free-data gap | BIS Global Liquidity Indicators (USD/EUR credit), true exchange net-flow, Vol Term Structure / VX1-VX2 (tried VIX3M then VIX9D via Yahoo Finance — both failed identically in two separate environments, pointing to a genuine data-coverage gap on Yahoo's end for CBOE's secondary vol indices) |
 
 AAII and the Cboe Put/Call ratio were originally (incorrectly) flagged as
 having no free source — they do. See "Corrections" below.
@@ -124,18 +124,42 @@ output to the `SERIES` dict under `"BIS GLI — USD Credit"` /
 ## Rate limits & politeness
 
 - FRED: generous, no realistic risk of hitting limits at this scale.
-- Stooq: no published hard limit for casual daily use; the script only pulls
-  once per run.
+- Yahoo Finance: the primary source for equities, commodities, sectors, and
+  FX (Stooq is a fallback only, since it's proven unreliable — it appears to
+  block automated requests outright).
 - CoinGecko: keyless calls are IP rate-limited; the dominance/altseason
-  calculation includes a small delay between requests to stay well within it.
-- CFTC, Binance, DefiLlama, Alternative.me: all comfortably free at this
+  calculation includes a small delay between requests to stay well within
+  it. Also now the source for Perp Funding Rate / Open Interest (see below).
+- CFTC, DefiLlama, Alternative.me, AAII, Cboe: all comfortably free at this
   volume (one run per day).
+- **Binance is deliberately NOT called directly anymore.** A real run
+  confirmed Binance returns 451 "Unavailable For Legal Reasons" from
+  GitHub Actions' runner IPs (a regulatory geo-block on cloud-provider IP
+  ranges, not a code issue — confirmed to affect Bybit identically too).
+  Perp Funding Rate and Open Interest are now sourced from CoinGecko's free
+  `/derivatives` endpoint instead, which proxies this data without touching
+  an exchange's own CDN-protected infrastructure. One trade-off: that
+  endpoint only gives a current snapshot, not history, so the pipeline
+  accumulates its own — one new data point per day, saved to
+  `derivatives_history.json` (which the GitHub Action commits alongside
+  `data.json`). Needs 5 days accumulated before Open Interest goes live,
+  10 days for Perp Funding Rate.
 
 ## What genuinely has no free fix (for now)
 
+- **BIS Global Liquidity Indicators** (USD/EUR credit) — a real free SDMX
+  endpoint exists but needs its exact query key hand-verified against the
+  interactive API docs before it can be wired in reliably.
 - **True exchange net-flow** (wallet-cluster based) — this is proprietary
   Glassnode/CryptoQuant-style analysis; no free equivalent exists.
-- **AAII bull-bear survey, options put/call ratio, fund manager cash** — no
-  free full-history feed exists for these exact series. If you ever want
-  them, that's the point where a paid data add-on would make sense — not
-  before.
+- **Vol Term Structure (VX1-VX2)** — tried twice (VIX3M, then VIX9D, both
+  via Yahoo Finance); both failed identically in two separate environments
+  (local machine and GitHub Actions), pointing to a genuine data-coverage
+  gap on Yahoo's end for CBOE's secondary vol indices, not a network issue.
+
+Everything else that was once on this list — AAII's bull-bear survey, the
+options put/call ratio, and fund manager cash — turned out to have genuine
+free sources after all (AAII's own site, Cboe's CDN, and a Money Market Fund
+proxy respectively) and are now live. Worth remembering: "no free fix" is
+often really "no free fix *found yet*" — several of this project's fixes
+came from someone pushing back on an earlier "that's not possible" answer.

@@ -19,6 +19,12 @@ Thanks for even considering it — this started as a solo build and any help is 
 
 See [`README.md`](README.md) for the quick start and [`README_DATA_SETUP.md`](README_DATA_SETUP.md) for the full data pipeline walkthrough.
 
-## Questions
+## Questions, comments, and general feedback
 
-Open an issue, or use the contact details in the dashboard's Support section.
+Two different places for two different things:
+- **[Discussions](../../discussions)** — general comments, suggestions, "I found this useful," ideas, or just saying hello. This is the right place for anything open-ended.
+- **[Issues](../../issues)** — specific, actionable bugs or feature requests, especially anything with an exact error message attached (see above).
+
+If you're not sure which one fits, Discussions is the safer default — it's easy to convert a Discussion into an Issue later if it turns out to be a concrete bug.
+
+You can also use the contact details in the dashboard's Support section.

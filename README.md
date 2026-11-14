@@ -24,6 +24,7 @@ Most macro liquidity dashboards live behind institutional paywalls or cost hundr
 - **Compare** — how today's regime stacks up against 1 day / 1 week / 1 month / 3 months / 1 year ago, each recalculated as it would have read on that date, not just restated backward
 - **Evaluation** — a plain-English cycle-position read (Contraction → Trough → Recovery → Expansion → Late Cycle), an Accumulation Radar surfacing momentum before it's obvious, and a Focus List translating it all into concrete tickers worth researching further
 - **Flow Guide** — hover any dotted-underlined element anywhere in the tool for a plain-English explanation *and* a live "right now" reading, so the tool teaches its own framework as you use it
+- **Export** — one click for a print-ready PDF report (current tab or all four) or CSV downloads of every key area, each row tagged `live` or `synthetic` so exported numbers are never mistaken for market data
 
 ## Data sources — all free
 

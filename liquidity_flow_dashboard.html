@@ -367,10 +367,75 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
 /* scrollbar */
 ::-webkit-scrollbar{height:6px;width:6px;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ---------- EXPORT MENU ---------- */
+.export-wrap{position:relative;}
+.export-btn{
+  display:flex;align-items:center;gap:7px;
+  background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;
+  font-family:var(--font-display);font-size:11.5px;font-weight:600;color:var(--text-dim);transition:border-color .15s,color .15s;
+}
+.export-btn:hover,.export-btn[aria-expanded="true"]{border-color:var(--cyan);color:var(--text);}
+.export-menu{
+  display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:70;min-width:250px;
+  background:var(--panel-raised);border:1px solid var(--border);border-radius:9px;padding:6px;
+  box-shadow:0 10px 28px rgba(0,0,0,.55);
+}
+.export-menu.open{display:block;}
+.export-menu .em-head{
+  font-family:var(--font-display);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--text-faint);padding:8px 10px 4px;
+}
+.export-menu button{
+  display:block;width:100%;text-align:left;background:none;border:none;border-radius:6px;
+  padding:7px 10px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);cursor:pointer;
+}
+.export-menu button:hover,.export-menu button:focus-visible{background:var(--panel-alt);color:var(--text);outline:none;}
+.export-menu .em-note{font-size:10px;color:var(--text-faint);line-height:1.45;padding:4px 10px 8px;}
+.print-only{display:none;}
+
+/* ---------- PRINT / PDF REPORT ---------- */
+@media print{
+  @page{size:A4;margin:12mm;}
+  :root{
+    --bg:#FFFFFF;--panel:#FFFFFF;--panel-alt:#F3F5F8;--panel-raised:#FFFFFF;
+    --border:#C4CCD6;--border-soft:#E2E7ED;
+    --text:#111820;--text-dim:#3A4554;--text-faint:#5F6B7A;
+    --cyan:#0A86A0;--violet:#6650DC;
+    --pos-strong:#168A49;--pos:#2A8553;--neutral:#A9780A;--neg:#BE4B35;--neg-strong:#C0262C;
+  }
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body{background:#fff !important;color:#111820;}
+  body{padding:0;min-height:0;font-size:11px;}
+  .brand h1{background:none !important;-webkit-text-fill-color:#111820;color:#111820;}
+  .tabnav,.demo-banner,.tt-box,.export-wrap,.train-toggle,.first-load-callout,
+  .support-panel,.welcome-panel,.lock-overlay,.no-print,
+  .topbar,footer.disclosure{display:none !important;}  /* print-header / print-footer replace these */
+  .livedot{animation:none;box-shadow:none;}
+  .print-only{display:block;}
+  .panel,.bucket-card,.engine-item,tr,.prov-category{break-inside:avoid;page-break-inside:avoid;}
+  #provenancePanel{break-inside:auto;page-break-inside:auto;}  /* tall — let it flow; categories inside stay together */
+  h3,h4{break-after:avoid;}
+  body.print-all #coreView,body.print-all #proView,
+  body.print-all #compareView,body.print-all #evalView{display:block !important;}
+  body.print-all #proView,body.print-all #compareView,body.print-all #evalView{break-before:page;page-break-before:always;}
+  body.print-all #proView::before{content:'PRO / MAX';}
+  body.print-all #compareView::before{content:'COMPARE';}
+  body.print-all #evalView::before{content:'EVALUATION';}
+  body.print-all #proView::before,body.print-all #compareView::before,body.print-all #evalView::before{
+    display:block;font-family:var(--font-display);font-weight:700;font-size:15px;letter-spacing:1.5px;
+    color:var(--text);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:12px;
+  }
+  .print-header{border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:12px;font-size:10.5px;color:var(--text-dim);line-height:1.6;}
+  .print-header b{color:var(--text);}
+  .print-footer{margin-top:14px;padding-top:8px;border-top:1px solid var(--border);font-size:9.5px;color:var(--text-faint);line-height:1.5;}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <div class="print-only print-header" id="printHeader"></div>
 
   <div class="tt-box" id="ttBox">
     <div class="tt-head" id="ttHead"></div>
@@ -387,6 +452,29 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
       <div class="clock">
         <div><span class="livedot"></span>Session: <b id="clockDate"></b></div>
         <div id="coverageLine">Coverage: 32 series · 7 destination buckets · daily close</div>
+      </div>
+      <div class="export-wrap" id="exportWrap">
+        <button class="export-btn" id="exportBtn" aria-haspopup="true" aria-expanded="false" onclick="ctToggleMenu(event)">⬇ Export</button>
+        <div class="export-menu" id="exportMenu" role="menu">
+          <div class="em-head">PDF report</div>
+          <button role="menuitem" onclick="ctExport('pdf','current')">Current tab</button>
+          <button role="menuitem" onclick="ctExport('pdf','all')">Full report — all four tabs</button>
+          <label class="em-note" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;" onclick="event.stopPropagation()"><input type="checkbox" id="ctLandscape" checked> Landscape orientation</label>
+          <div class="em-note">Opens your browser's print dialog — choose “Save as PDF” as the destination, and untick “Headers and footers” for a cleaner page.</div>
+          <div class="em-head">CSV data</div>
+          <button role="menuitem" onclick="ctExport('csv','all')">All areas — one file</button>
+          <button role="menuitem" onclick="ctExport('csv','summary')">Regime summary</button>
+          <button role="menuitem" onclick="ctExport('csv','series')">Series snapshot (all buckets)</button>
+          <button role="menuitem" onclick="ctExport('csv','sectors')">Sector rotation</button>
+          <button role="menuitem" onclick="ctExport('csv','crypto')">Crypto sub-structure</button>
+          <button role="menuitem" onclick="ctExport('csv','cot')">COT positioning</button>
+          <button role="menuitem" onclick="ctExport('csv','sentiment')">Sentiment</button>
+          <button role="menuitem" onclick="ctExport('csv','compare_scores')">Compare — regime scores</button>
+          <button role="menuitem" onclick="ctExport('csv','compare_series')">Compare — key series % change</button>
+          <button role="menuitem" onclick="ctExport('csv','evaluation')">Evaluation — accumulation radar</button>
+          <button role="menuitem" onclick="ctExport('csv','provenance')">Data provenance (live vs synthetic)</button>
+          <button role="menuitem" onclick="ctExport('csv','history')">Full series history (long format)</button>
+        </div>
       </div>
       <div style="position:relative;">
         <div class="train-toggle" id="trainToggle" onclick="toggleTraining()">
@@ -509,7 +597,7 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
   <div class="panel support-panel" id="supportPanel" style="margin-bottom:18px;">
     <h3>☕ Support This Project</h3>
     <p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin:0 0 14px;">
-      Capital Tide is built and maintained independently. If it's useful to you, a small tip will help keep it going — genuinely appreciated, no pressure either way.
+      Capital Tide is built and maintained independently. If it's useful to you, a small tip helps keep it going — genuinely appreciated, no pressure either way.
     </p>
     <div class="wallet-row">
       <span class="wl-tag">BTC</span>
@@ -527,7 +615,7 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
       <button onclick="window.location.href='mailto:obscuranoctis@tutamail.com?subject=Capital%20Tide%20feedback'">Email</button>
     </div>
     <div class="support-warn">
-      ⚠️ Please double- and triple-check against your wallet app before sending anything as sends are irreversible.
+      ⚠️ Please double- and triple-check against your wallet app before sending anything - transfers are irreversible.  Thanks again!
     </div>
   </div>
 
@@ -783,8 +871,12 @@ footer.disclosure{text-align:center;font-size:10px;color:var(--text-faint);paddi
 
   </div><!-- /evalView -->
 
+  <div class="print-only print-footer">
+    Capital Tide is an educational and research tool — a demonstration of how much macro data is reconstructable from free, public sources.
+    It is not designed or intended for traders or investors, and nothing in this report is financial, investment, legal or tax advice.
+    Series marked synthetic are illustrative placeholders, not market data. See the Data Provenance panel and the Legal &amp; Disclaimer section for detail.
+  </div>
 </div>
-
 <script>
 function showView(v){
   document.getElementById('coreView').style.display = v==='core' ? '' : 'none';
@@ -796,6 +888,48 @@ function showView(v){
   document.getElementById('tabCompareBtn').classList.toggle('active', v==='compare');
   document.getElementById('tabEvalBtn').classList.toggle('active', v==='eval');
 }
+
+/* ---------- EXPORT: menu, dispatcher, PDF (print) ---------- */
+function ctCloseMenu(){
+  const m = document.getElementById('exportMenu'), b = document.getElementById('exportBtn');
+  if(m) m.classList.remove('open');
+  if(b) b.setAttribute('aria-expanded','false');
+}
+function ctToggleMenu(e){
+  e.stopPropagation();
+  const m = document.getElementById('exportMenu'), b = document.getElementById('exportBtn');
+  const open = !m.classList.contains('open');
+  m.classList.toggle('open', open);
+  b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.addEventListener('click', ctCloseMenu);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') ctCloseMenu(); });
+function ctExport(kind, arg){
+  ctCloseMenu();
+  if(!window.CT_EXPORT){ alert('The dashboard is still loading its data — try again in a moment.'); return; }
+  if(kind==='csv') window.CT_EXPORT.csv(arg);
+  else if(kind==='pdf'){
+    // page orientation: injected last so it overrides the default @page rule
+    let st=document.getElementById('ctPageStyle');
+    if(!st){ st=document.createElement('style'); st.id='ctPageStyle'; document.head.appendChild(st); }
+    const land=(document.getElementById('ctLandscape')||{}).checked;
+    st.textContent='@media print{@page{size:A4 '+(land?'landscape;margin:12mm 12mm 10mm 12mm;':'portrait;margin:12mm;')+'}}';
+    window.CT_EXPORT.pdf(arg);
+  }
+}
+(function(){
+  let openedDetails = [];
+  window.addEventListener('beforeprint', ()=>{
+    // expand collapsed Methodology / Legal sections so they appear in the PDF
+    openedDetails = [];
+    document.querySelectorAll('details').forEach(d=>{ if(!d.open){ d.open = true; openedDetails.push(d); } });
+  });
+  window.addEventListener('afterprint', ()=>{
+    openedDetails.forEach(d=>{ d.open = false; });
+    openedDetails = [];
+    document.body.classList.remove('print-all');
+  });
+})();
 function copyAddr(id){
   const el = document.getElementById(id);
   const text = el.textContent;
@@ -1924,6 +2058,160 @@ if(provenanceContent){
   });
   provenanceContent.innerHTML = html;
 }
+
+/* ---------- EXPORT (CSV from live in-memory data; PDF via print stylesheet) ---------- */
+(function buildExports(){
+  const stamp = new Date().toISOString().slice(0,10);
+  const LIVE = {};
+  PROVENANCE.forEach(p=>{ LIVE[p.name] = p.live; });
+  const status = n => LIVE[n]===undefined ? 'n/a' : (LIVE[n] ? 'live' : 'synthetic');
+
+  function cell(v){
+    if(v===null || v===undefined) return '';
+    if(typeof v==='number') return Number.isFinite(v) ? String(Math.round(v*1e6)/1e6) : '';
+    let t = String(v);
+    if(/^[=+\-@\t\r]/.test(t)) t = "'" + t;               // stop spreadsheet formula injection
+    if(/[",\n\r]/.test(t)) t = '"' + t.replace(/"/g,'""') + '"';
+    return t;
+  }
+  const table = (head, rows) => [head, ...rows].map(r=>r.map(cell).join(',')).join('\r\n');
+
+  const AREAS = {
+    summary: {title:'Regime summary', build:()=>{
+      const rows = [
+        ['Generated (UTC)', new Date().toISOString()],
+        ['Data file timestamp', REAL.generated_at || 'none — all series synthetic'],
+        ['Series live', PROVENANCE.filter(p=>p.live).length],
+        ['Series synthetic', PROVENANCE.filter(p=>!p.live).length],
+        ['Composite regime', REGIME.name],
+        ['Regime score (-3 to +3)', regimeScore],
+        ['Liquidity score', liquidityScore],
+        ['Funding score', fundingScore],
+        ['Credit score', creditScore],
+        ['Destination breadth', destinationBreadth],
+        ...destinationKeys.map(k=>[BUCKET_META[k].label + ' score', SCORES[k]]),
+        ['Cycle phase', cyclePhase],
+        ['3-month regime momentum', momentum],
+      ];
+      return table(['metric','value'], rows);
+    }},
+    series: {title:'Series snapshot', build:()=>{
+      const rows = [];
+      for(const key in DATA){
+        DATA[key].forEach(d=>rows.push([BUCKET_META[key].label, d.name, d.cat, d.lastVal, d.z, d.r20, d.d1, d.invert?'yes':'no', status(d.name)]));
+      }
+      return table(['bucket','series','category','last_value','zscore_risk_signed','roc_20d','change_1d','inverted_series','data_status'], rows);
+    }},
+    sectors: {title:'Sector rotation', build:()=>{
+      const rows = sectorResults.map(r=>[r.t, r.name, r.score, r.rsTrend, r.pctAbove50, r.hiLoRatio, r.maStack, status(r.t)]);
+      return table(['ticker','sector','ready_to_run_score','rel_strength_trend_20d','pct_above_50dma_MODELED','hi_lo_ratio_MODELED','ma_stack_MODELED','data_status_rel_strength'], rows);
+    }},
+    crypto: {title:'Crypto sub-structure', build:()=>{
+      const rows = cryptoSubs.map(c=>{
+        let z = zscore(c.hist); if(c.invert) z = -z;
+        return [c.label, last(c.hist), z, c.note(z), status(c.label)];
+      });
+      return table(['metric','last_value','zscore_risk_signed','read','data_status'], rows);
+    }},
+    cot: {title:'COT positioning', build:()=>{
+      const rows = COT_ASSETS.map(([name,hist])=>{
+        const z = zscore(hist);
+        return [name, last(hist), z, Math.abs(z)>1.5?'yes':'no', status(name)];
+      });
+      return table(['market','last_net_noncommercial','zscore','contrarian_extreme','data_status'], rows);
+    }},
+    sentiment: {title:'Sentiment', build:()=>{
+      const rows = SENTIMENT.map(([name,hist,invert])=>{
+        let z = zscore(hist); if(invert) z = -z;
+        return [name, last(hist), z, invert?'yes':'no', status(name)];
+      });
+      return table(['indicator','last_value','zscore_risk_signed','inverted','data_status'], rows);
+    }},
+    compare_scores: {title:'Compare — regime scores', build:()=>{
+      const rows = COMPARE_ROWS.map(r=>[r.label, ...PERIODS.map((p,i)=>
+        r.bucketKey ? bucketScoreAt(r.bucketKey, p.idx) : r.get(periodScores[i].s))]);
+      return table(['layer', ...PERIODS.map(p=>p.label)], rows);
+    }},
+    compare_series: {title:'Compare — key series % change vs now', build:()=>{
+      const rows = KEY_SERIES.map(s=>{
+        const now = last(s.hist);
+        return [s.name, now, ...PERIODS.slice(1).map(p=>{
+          const past = s.hist[p.idx] ?? s.hist[0];
+          return (now-past)/Math.abs(past||1);
+        }), status(s.name)];
+      });
+      return table(['series','now', ...PERIODS.slice(1).map(p=>'pct_change_vs_'+p.label.replace(/\s+/g,'_')), 'data_status'], rows);
+    }},
+    evaluation: {title:'Evaluation — accumulation radar', build:()=>{
+      const rows = [...ACCUM_ITEMS].sort((a,b)=>b.delta-a.delta).map(i=>[i.name, i.cat, i.now, i.delta]);
+      return table(['item','category','score_now','change_vs_1_month'], rows);
+    }},
+    provenance: {title:'Data provenance', build:()=>{
+      const rows = PROVENANCE.map(p=>[p.name, p.category, p.live?'live':'synthetic']);
+      return table(['series','category','data_status'], rows);
+    }},
+    history: {title:'Full series history (long format)', build:()=>{
+      const rows = [];
+      const push = (group, name, hist) => {
+        const st = status(name);
+        hist.forEach((v,i)=>rows.push([group, name, hist.length-1-i, v, st]));
+      };
+      for(const key in DATA) DATA[key].forEach(d=>push(BUCKET_META[key].label, d.name, d.hist));
+      cryptoSubs.forEach(c=>push('Crypto sub-structure', c.label, c.hist));
+      COT_ASSETS.forEach(([n,h])=>push('COT positioning', n, h));
+      SENTIMENT.forEach(([n,h])=>push('Sentiment', n, h));
+      return table(['group','series','observations_before_latest','value','data_status'], rows);
+    }},
+  };
+
+  function download(filename, text){
+    const blob = new Blob(['﻿' + text], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+
+  function csv(area){
+    if(area === 'all'){
+      const header = [
+        '# Capital Tide export — generated ' + new Date().toISOString(),
+        '# ' + PROVENANCE.filter(p=>p.live).length + ' of ' + PROVENANCE.length + ' series live; rows marked data_status=synthetic are illustrative placeholders, not market data.',
+        '# Educational/research use only — not financial, investment, legal or tax advice.',
+        '# Series history is exported separately (it is large); use "Full series history" in the Export menu.',
+        ''
+      ];
+      const body = Object.keys(AREAS).filter(k=>k!=='history').map(k=>'# ' + AREAS[k].title + '\r\n' + AREAS[k].build());
+      download('capital-tide_all-areas_' + stamp + '.csv', header.concat(body.join('\r\n\r\n')).join('\r\n'));
+      return;
+    }
+    const a = AREAS[area];
+    if(!a) return;
+    download('capital-tide_' + area.replace(/_/g,'-') + '_' + stamp + '.csv', a.build());
+  }
+
+  function pdf(mode){
+    document.body.classList.toggle('print-all', mode === 'all');
+    const activeTab = (document.querySelector('.tab-btn.active') || {}).textContent || 'Core Desk';
+    const hdr = document.getElementById('printHeader');
+    if(hdr){
+      const cov = (document.getElementById('coverageLine') || {}).textContent || '';
+      hdr.innerHTML = '<b>CAPITAL TIDE — Global Liquidity &amp; Flow Regime Desk</b><br>' +
+        'Report generated ' + new Date().toLocaleString('en-GB') + ' · ' +
+        (mode === 'all' ? 'Full report (all tabs)' : 'Tab: ' + activeTab.replace(/\s+/g,' ').trim()) +
+        '<br>' + cov;
+    }
+    window.print();
+  }
+
+  // The economic calendar is illustrative placeholder content (fixed events on
+  // generated dates), so it is kept out of printed reports and CSV exports.
+  const calPanel = document.getElementById('calTable') && document.getElementById('calTable').closest('.panel');
+  if(calPanel) calPanel.classList.add('no-print');
+
+  window.CT_EXPORT = { csv, pdf, areas: AREAS };
+})();
 
 })(); // end async IIFE
 </script>
